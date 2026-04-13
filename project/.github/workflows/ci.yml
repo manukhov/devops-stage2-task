@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  compose-smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate docker compose config
+        run: docker compose config
+
+      - name: Build and start services
+        run: docker compose up -d --build
+
+      - name: Show service status
+        run: docker compose ps
+
+      - name: Wait for application
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8000/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Application did not become healthy in time"
+          exit 1
+
+      - name: Check Prometheus health
+        run: curl -fsS http://localhost:9090/-/healthy
+
+      - name: Check Prometheus target for app
+        run: |
+          curl -fsS http://localhost:9090/api/v1/targets | grep '"health":"up"' | grep 'app:8000'
+
+      - name: Check Grafana health
+        run: curl -fsS http://localhost:3000/api/health
+
+      - name: Generate application traffic
+        run: |
+          for i in {1..10}; do
+            curl -fsS http://localhost:8000/ > /dev/null
+          done
+
+      - name: Check visits endpoint
+        run: curl -fsS http://localhost:8000/visits
+
+      - name: Check metrics endpoint
+        run: curl -fsS http://localhost:8000/metrics | grep app_requests_total
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Shutdown services
+        if: always()
+        run: docker compose down -v
