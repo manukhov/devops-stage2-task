@@ -41,7 +41,7 @@ services:
   ports:
     - "9090:9090"
 
-grafana:
+ grafana:
   image: grafana/grafana:11.1.4
   restart: unless-stopped
   environment:
