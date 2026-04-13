@@ -51,3 +51,11 @@ def health():
 @app.get("/metrics")
 def metrics():
     return PlainTextResponse(generate_latest().decode(), media_type=CONTENT_TYPE_LATEST)
+
+@app.get("/visits")
+def visits():
+    with closing(get_conn()) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM visits")
+            total = cur.fetchone()[0]
+    return {"visits": total}
