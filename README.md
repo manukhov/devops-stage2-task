@@ -24,7 +24,7 @@
     │   ├── backup.sh
     │   └── restore.sh
     ├── docker-compose.yml
-    ├── .env.example
+    ├── .env
     └── README.md
 
 ---
